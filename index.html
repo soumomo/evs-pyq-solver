@@ -49,6 +49,10 @@
           <div class="flex items-center gap-2">
             <h1 class="text-sm font-bold tracking-wider text-white uppercase">PYQ Exam Engine</h1>
             <span class="text-[10px] px-2 py-0.5 rounded bg-[#1C2436] text-amber-400 font-mono font-semibold border border-amber-500/20">190 MCQs</span>
+            <span id="storage-pill" class="hidden text-[10px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 font-mono border border-emerald-500/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Auto-Saved
+            </span>
           </div>
           <p class="text-[11px] text-slate-400 font-mono">CBCS AECC-2 • 2024 / 2023 / 2022 / Question Bank</p>
         </div>
@@ -72,6 +76,11 @@
 
       <!-- CONTROLS & TOGGLES -->
       <div class="flex items-center gap-2">
+        <a href="EVS_Master_Exam_Prep_Guide_Complete.pdf" download="EVS_Master_Exam_Prep_Guide_Complete.pdf" class="px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-300 hover:bg-amber-500 hover:text-black transition flex items-center gap-1.5 font-semibold shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span class="hidden sm:inline">48-Page Master PDF</span>
+          <span class="sm:hidden">PDF</span>
+        </a>
         <button id="mode-toggle-btn" class="px-3 py-1.5 rounded-lg border border-[#2B354C] bg-[#141A29] text-xs text-slate-200 hover:text-white hover:border-amber-500/50 transition flex items-center gap-1.5">
           <span id="mode-label" class="font-semibold text-amber-400">Practice Mode</span>
         </button>
@@ -153,9 +162,11 @@
           </span>
         </div>
 
-        <button id="flag-btn" class="text-slate-400 hover:text-amber-400 p-1.5 rounded hover:bg-[#1A2234] transition" title="Flag question for review">
-          <svg id="flag-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="flag-btn" class="text-slate-400 hover:text-amber-400 p-1.5 rounded hover:bg-[#1A2234] transition" title="Flag question for review">
+            <svg id="flag-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+          </button>
+        </div>
       </div>
 
       <!-- QUESTION TEXT -->
@@ -188,8 +199,8 @@
         </button>
 
         <div class="flex items-center gap-2">
-          <button id="reset-question-btn" class="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-slate-200 transition">
-            Clear
+          <button id="reset-question-btn" class="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-slate-200 transition" title="Clear this answer">
+            Clear Answer
           </button>
           <button id="next-btn" class="px-5 py-2 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.25)]">
             <span>Next Question</span>
@@ -231,9 +242,12 @@
       </div>
 
       <!-- FOOTER ACTIONS -->
-      <div class="pt-4 border-t border-[#1E2638] flex gap-2">
+      <div class="pt-4 border-t border-[#1E2638] flex flex-col gap-2">
         <button id="submit-exam-btn" class="w-full py-2.5 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 transition">
           Finish Test & View Scorecard
+        </button>
+        <button id="reset-all-storage-btn" class="w-full py-2 rounded-xl border border-rose-500/40 bg-rose-950/20 text-rose-300 font-semibold text-xs hover:bg-rose-900/30 transition">
+          Reset All Progress & Answers
         </button>
       </div>
 
@@ -321,6 +335,74 @@
     const resultModal = document.getElementById('result-modal');
     const closeResultBtn = document.getElementById('close-result-btn');
     const reviewWrongBtn = document.getElementById('review-wrong-btn');
+    const storagePill = document.getElementById('storage-pill');
+    const resetAllStorageBtn = document.getElementById('reset-all-storage-btn');
+
+    // LOCAL STORAGE PERSISTENCE
+    const LS_KEY_ANSWERS = 'EVS_PYQ_ANSWERS_V2';
+    const LS_KEY_FLAGS = 'EVS_PYQ_FLAGS_V2';
+    const LS_KEY_INDEX = 'EVS_PYQ_INDEX_V2';
+    const LS_KEY_PAPER = 'EVS_PYQ_PAPER_V2';
+    const LS_KEY_UNIT = 'EVS_PYQ_UNIT_V2';
+    const LS_KEY_MODE = 'EVS_PYQ_MODE_V2';
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(LS_KEY_ANSWERS, JSON.stringify(userAnswers));
+        localStorage.setItem(LS_KEY_FLAGS, JSON.stringify(Array.from(flaggedQuestions)));
+        localStorage.setItem(LS_KEY_INDEX, currentIndex.toString());
+        localStorage.setItem(LS_KEY_PAPER, sourceFilter.value);
+        localStorage.setItem(LS_KEY_UNIT, unitFilter.value);
+        localStorage.setItem(LS_KEY_MODE, isExamMode ? 'EXAM' : 'PRACTICE');
+        
+        // Show auto-saved indicator briefly
+        if (storagePill) {
+          storagePill.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn('LocalStorage save failed:', e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const savedAns = localStorage.getItem(LS_KEY_ANSWERS);
+        if (savedAns) userAnswers = JSON.parse(savedAns);
+
+        const savedFlags = localStorage.getItem(LS_KEY_FLAGS);
+        if (savedFlags) flaggedQuestions = new Set(JSON.parse(savedFlags));
+
+        const savedPaper = localStorage.getItem(LS_KEY_PAPER);
+        if (savedPaper && sourceFilter.querySelector(`option[value="${savedPaper}"]`)) {
+          sourceFilter.value = savedPaper;
+        }
+
+        const savedUnit = localStorage.getItem(LS_KEY_UNIT);
+        if (savedUnit && unitFilter.querySelector(`option[value="${savedUnit}"]`)) {
+          unitFilter.value = savedUnit;
+        }
+
+        const savedMode = localStorage.getItem(LS_KEY_MODE);
+        if (savedMode === 'EXAM') {
+          isExamMode = true;
+          modeLabel.textContent = "Exam Mode";
+          modeLabel.className = "font-semibold text-cyan-400";
+          timerBox.classList.remove('hidden');
+          startTimer();
+        }
+
+        const savedIdx = localStorage.getItem(LS_KEY_INDEX);
+        if (savedIdx !== null) {
+          currentIndex = parseInt(savedIdx, 10) || 0;
+        }
+
+        if (storagePill) {
+          storagePill.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn('LocalStorage load failed:', e);
+      }
+    }
 
     // Filter Application
     function applyFilters() {
@@ -340,10 +422,13 @@
         return true;
       });
 
-      currentIndex = 0;
+      if (currentIndex >= filteredQuestions.length) {
+        currentIndex = 0;
+      }
       renderCurrentQuestion();
       renderPaletteGrid();
       updateHeaderStats();
+      saveToLocalStorage();
     }
 
     // Render Current Question
@@ -450,6 +535,7 @@
       renderCurrentQuestion();
       updateHeaderStats();
       renderPaletteGrid();
+      saveToLocalStorage();
     }
 
     // Update Header Score & Accuracy
@@ -513,6 +599,7 @@
           currentIndex = idx;
           renderCurrentQuestion();
           paletteModal.classList.add('hidden');
+          saveToLocalStorage();
         };
         paletteGrid.appendChild(btn);
       });
@@ -523,6 +610,7 @@
       if (currentIndex > 0) {
         currentIndex--;
         renderCurrentQuestion();
+        saveToLocalStorage();
       }
     };
 
@@ -530,6 +618,7 @@
       if (currentIndex < filteredQuestions.length - 1) {
         currentIndex++;
         renderCurrentQuestion();
+        saveToLocalStorage();
       }
     };
 
@@ -541,6 +630,7 @@
       renderCurrentQuestion();
       updateHeaderStats();
       renderPaletteGrid();
+      saveToLocalStorage();
     };
 
     document.getElementById('reset-question-btn').onclick = () => {
@@ -550,6 +640,23 @@
       renderCurrentQuestion();
       updateHeaderStats();
       renderPaletteGrid();
+      saveToLocalStorage();
+    };
+
+    resetAllStorageBtn.onclick = () => {
+      if (confirm("Are you sure you want to reset ALL saved progress, answers, and bookmarks?")) {
+        userAnswers = {};
+        flaggedQuestions.clear();
+        localStorage.removeItem(LS_KEY_ANSWERS);
+        localStorage.removeItem(LS_KEY_FLAGS);
+        localStorage.removeItem(LS_KEY_INDEX);
+        currentIndex = 0;
+        renderCurrentQuestion();
+        renderPaletteGrid();
+        updateHeaderStats();
+        paletteModal.classList.add('hidden');
+        alert("All progress has been reset.");
+      }
     };
 
     sourceFilter.onchange = applyFilters;
@@ -577,6 +684,7 @@
       }
       renderCurrentQuestion();
       renderPaletteGrid();
+      saveToLocalStorage();
     };
 
     function startTimer() {
@@ -626,6 +734,7 @@
       renderCurrentQuestion();
       renderPaletteGrid();
       updateHeaderStats();
+      saveToLocalStorage();
     }
 
     closeResultBtn.onclick = () => resultModal.classList.add('hidden');
@@ -666,11 +775,13 @@
         if (currentIndex < filteredQuestions.length - 1) {
           currentIndex++;
           renderCurrentQuestion();
+          saveToLocalStorage();
         }
       } else if (e.key === 'ArrowLeft') {
         if (currentIndex > 0) {
           currentIndex--;
           renderCurrentQuestion();
+          saveToLocalStorage();
         }
       } else if (['1', '2', '3', '4'].includes(e.key)) {
         selectOption(parseInt(e.key) - 1);
@@ -682,7 +793,8 @@
       }
     });
 
-    // Init
+    // Initialize: Load saved progress from localStorage, then filter & render
+    loadFromLocalStorage();
     applyFilters();
   </script>
 </body>
